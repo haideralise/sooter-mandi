@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/*',
         ]);
     })
+    ->withCommands([
+        __DIR__.'/../app/Console/Commands',
+    ])
     ->withExceptions(function ($exceptions) {
         //
     })->create();
