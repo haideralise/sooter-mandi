@@ -763,6 +763,7 @@ and a worker that actually delivers the queued notifications.
 - **Frontend Questions:** Check `frontend/README.md`
 - **API Spec:** Check `docs/API.md`
 - **Database:** Check `docs/DATABASE.md`
+- **Deploying:** Check `docs/DEPLOYMENT.md`
 - **Branches:** Each branch has focused scope
 
 ---

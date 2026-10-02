@@ -362,25 +362,18 @@ silently ignored.
 
 ## Deployment
 
-### Production Checklist
+See **[`/docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md)** — it is the single source
+of truth for server requirements, environment setup, the deploy sequence,
+rollback, and the security gaps that must be closed first.
 
-1. Set `APP_ENV=production`
-2. Set `APP_DEBUG=false`
-3. Configure proper database credentials
-4. Configure Pusher for production
-5. Run migrations: `php artisan migrate --force`
-6. Cache config: `php artisan config:cache`
-7. Cache routes: `php artisan route:cache`
+Three things that bite hardest, in short:
 
-### Docker
-
-```dockerfile
-FROM php:8.2-fpm
-RUN docker-php-ext-install pdo pdo_mysql
-COPY . /app
-WORKDIR /app
-RUN composer install --no-dev
-```
+- **Run PHP 8.2–8.4, not 8.5.** On 8.5 Laravel 11 emits deprecations before its
+  error handler is installed, which corrupts every JSON response body.
+- **Never run `db:seed` in production.** The seeders create an admin account
+  with the password `password`.
+- **`NEXT_PUBLIC_API_URL` is baked into the frontend at build time**, not read at
+  runtime. Changing it requires a rebuild.
 
 ## Troubleshooting
 
@@ -421,6 +414,7 @@ and lock in a 200 status code. Run the project on PHP 8.2–8.4:
 For issues or questions, refer to:
 - `/docs/API.md` - Complete API documentation
 - `/docs/DATABASE.md` - Database schema details
+- `/docs/DEPLOYMENT.md` - Server setup, deploy sequence, security checklist
 - Laravel documentation: https://laravel.com/docs
 
 ---

@@ -112,6 +112,11 @@ See `/docs/API.md` for complete API documentation.
 
 See `/docs/DATABASE.md` for database schema and relationships.
 
+## Deployment
+
+See `/docs/DEPLOYMENT.md` for server requirements, environment setup, the deploy
+sequence, and the security gaps that must be closed before going public.
+
 ---
 
 **Status:** 🔨 In Development  
