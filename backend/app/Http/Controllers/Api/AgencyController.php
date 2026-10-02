@@ -19,27 +19,32 @@ class AgencyController extends Controller
             $query->where('city', $request->city);
         }
 
-        if ($request->input('active_only', true)) {
+        // boolean() rather than input(): a query string carries "false" as a
+        // string, which is truthy in PHP, so active_only=false was ignored and
+        // deactivated agencies could never be listed again.
+        if ($request->boolean('active_only', true)) {
             $query->where('is_active', true);
         }
 
-        $agencies = $query->paginate($request->input('limit', 50));
+        $agencies = $query->withCount('threads')->paginate($request->input('limit', 50));
 
-        return $this->paginatedResponse($agencies->map(fn($agency) => [
+        $agencies->setCollection($agencies->getCollection()->map(fn($agency) => [
             'id' => $agency->id,
             'name' => $agency->name,
             'city' => $agency->city,
+            'godown_address' => $agency->godown_address,
             'contact_phone' => $agency->contact_phone,
             'contact_email' => $agency->contact_email,
-            'thread_count' => $agency->threads()->count(),
+            'is_active' => $agency->is_active,
+            'thread_count' => $agency->threads_count,
             'created_at' => $agency->created_at,
         ]));
+
+        return $this->paginatedResponse($agencies);
     }
 
     public function store(Request $request)
     {
-        $this->authorize('isAdmin', auth()->user());
-
         $validated = $request->validate([
             'name' => 'required|string|unique:agencies,name',
             'city' => 'required|string',
@@ -75,8 +80,6 @@ class AgencyController extends Controller
 
     public function update(Request $request, $id)
     {
-        $this->authorize('isAdmin', auth()->user());
-
         $agency = Agency::findOrFail($id);
 
         $validated = $request->validate([
@@ -95,8 +98,6 @@ class AgencyController extends Controller
 
     public function destroy($id)
     {
-        $this->authorize('isAdmin', auth()->user());
-
         $agency = Agency::findOrFail($id);
         $agency->update(['is_active' => false]);
 

@@ -23,29 +23,40 @@ class ThreadController extends Controller
             $query->where('type', $request->type);
         }
 
-        if ($request->input('active_only', true)) {
+        // boolean() rather than input(): a query string carries "false" as a
+        // string, which is truthy in PHP, so active_only=false was ignored and
+        // deactivated threads could never be listed again.
+        if ($request->boolean('active_only', true)) {
             $query->where('is_active', true);
         }
 
         $threads = $query->paginate($request->input('limit', 50));
 
-        return $this->paginatedResponse($threads->map(fn($thread) => [
-            'id' => $thread->id,
-            'agency_id' => $thread->agency_id,
-            'agency_name' => $thread->agency->name,
-            'type' => $thread->type,
-            'color' => $thread->color,
-            'packaging_type' => $thread->packaging_type,
-            'weight' => $thread->weight_value . $thread->weight_unit,
-            'current_price' => $thread->getCurrentPrice(),
-            'last_updated' => $thread->getLatestRate()?->updated_at,
-        ]));
+        $threads->setCollection($threads->getCollection()->map(function ($thread) {
+            $latestRate = $thread->getLatestRate();
+
+            return [
+                'id' => $thread->id,
+                'agency_id' => $thread->agency_id,
+                'agency_name' => $thread->agency?->name,
+                'type' => $thread->type,
+                'color' => $thread->color,
+                'packaging_type' => $thread->packaging_type,
+                'weight' => $thread->weight_value . $thread->weight_unit,
+                'weight_value' => $thread->weight_value,
+                'weight_unit' => $thread->weight_unit,
+                'description' => $thread->description,
+                'is_active' => $thread->is_active,
+                'current_price' => $latestRate?->price_pkr ?? 0,
+                'last_updated' => $latestRate?->updated_at,
+            ];
+        }));
+
+        return $this->paginatedResponse($threads);
     }
 
     public function store(Request $request)
     {
-        $this->authorize('isAdmin', auth()->user());
-
         $validated = $request->validate([
             'agency_id' => 'required|exists:agencies,id',
             'type' => 'required|string',
@@ -87,8 +98,6 @@ class ThreadController extends Controller
 
     public function update(Request $request, $id)
     {
-        $this->authorize('isAdmin', auth()->user());
-
         $thread = Thread::findOrFail($id);
 
         $validated = $request->validate([
