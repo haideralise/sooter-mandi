@@ -6,6 +6,11 @@
 
 ---
 
+> **For current status, read [`PROGRESS.md`](PROGRESS.md).** This file is the
+> original plan and the phase breakdown; `PROGRESS.md` is the living record of
+> what is actually built, what is broken, and what is next. Where the two
+> disagree, `PROGRESS.md` wins.
+
 ## 📋 Executive Summary
 
 The SooterMandi application is a B2B platform for tracking thread rates in the Faisalabad market. Three branches have been created with foundational code. This roadmap tracks what's been completed and what remains.
@@ -228,65 +233,41 @@ Nothing in this phase
 
 Nothing in this phase
 
+### ✅ COMPLETED (2026-10-02 — frontend session)
+
+**Pages (11 total):**
+- [x] `/` root redirect, `/login`, `/register`
+- [x] `/dashboard` — rate cards, filters populated from the API
+- [x] `/reports` — recharts trends + high/low/average/change tiles
+- [x] `/settings` — subscription management
+- [x] `/broker/rates` — rate update form with live price delta
+- [x] `/admin/agencies`, `/admin/threads` — CRUD with activate/deactivate
+- [x] `/admin/reports`, `/admin/activity-logs` — summaries and CSV export
+
+**Components:**
+- [x] `Header` — role-filtered nav + mobile hamburger menu
+- [x] `AuthGate` — auth + role guard on direct URL entry
+- [x] `PageShell`, `LoadingSpinner`, `EmptyState`
+
+**Functionality:**
+- [x] Login / register submission with real API error messages
+- [x] Rate fetching, filtering by type and agency
+- [x] Subscription add/remove
+- [x] CSV export (activity logs, rate history)
+- [x] Rate publishing from the broker form
+
+**Utils (`src/lib/`):**
+- [x] `format.ts` — `formatPrice`, `formatDateTime`, `threadType`, `downloadBlob`, date helpers
+- [x] `api-error.ts` — normalises the API's two error shapes
+
 ### ❌ MISSING
 
-**Critical (MVP):**
-- [ ] **Pages:**
-  - [ ] /register - Registration form
-  - [ ] /dashboard - Complete with rate cards
-  - [ ] /reports - Rate history & trends
-  - [ ] /settings - Subscription preferences
-
-- [ ] **Components:**
-  - [ ] Header/Navigation component
-  - [ ] RateCard - Display single rate
-  - [ ] RateChart - Recharts integration for trends
-  - [ ] FilterBar - Type/Agency filters
-  - [ ] LoadingSpinner - Loading state
-  - [ ] ErrorMessage - Error display
-  - [ ] SubscriptionToggle - Subscribe/unsubscribe
-
-- [ ] **Functionality:**
-  - [ ] Login form validation & submission
-  - [ ] Register form with validation
-  - [ ] Rate fetching from API
-  - [ ] Rate filtering by type/agency
-  - [ ] Subscription management
-  - [ ] CSV export button
-
-- [ ] **Real-time (Pusher):**
-  - [ ] Pusher integration setup
-  - [ ] WebSocket connection
-  - [ ] Listen for rate-updated events
-  - [ ] Auto-update rate cards on change
-  - [ ] Connection status indicator
-
-**Important (Phase 3):**
-- [ ] **Pages (Extended):**
-  - [ ] /admin - Admin dashboard
-  - [ ] /admin/agencies - Agency management
-  - [ ] /admin/activity-logs - Audit logs
-  - [ ] 404 page
-  - [ ] 500 error page
-
-- [ ] **Hooks:**
-  - [ ] useRates() - Fetch & manage rates
-  - [ ] useSubscriptions() - Manage subscriptions
-  - [ ] usePusher() - Real-time connection
-  - [ ] useAsync() - Data fetching
-  - [ ] useDebounce() - Search debouncing
-
-- [ ] **Utils:**
-  - [ ] formatCurrency() - Price formatting
-  - [ ] formatDate() - Date formatting
-  - [ ] calculateTrend() - Trend calculation
-  - [ ] downloadCSV() - Export functionality
-
-- [ ] **Testing:**
-  - [ ] Jest setup
-  - [ ] Component tests
-  - [ ] Page tests
-  - [ ] API client tests
+- [ ] **Real-time (Pusher):** the backend broadcasts correctly, but there is no
+      frontend listener, no `lib/pusher-client.ts`, and no real credentials
+- [ ] Custom `not-found.tsx` / `error.tsx` (Next's defaults are in use)
+- [ ] Reusable hooks (`useRates`, `useSubscriptions`, `usePusher`) — data
+      fetching currently lives in each page
+- [ ] **Testing:** no Jest/RTL setup, no component or page tests
 
 ---
 
@@ -394,7 +375,25 @@ Nothing in this phase
 
 - [x] ActivityLog model
 - [x] ActivityLogController
-- [ ] Report structure planned
+
+**Backend:**
+- [x] ReportController — `agencySummary()` and `rateHistory()`
+- [x] CSV export — streamed via `fputcsv`, chunked, for both activity logs and
+      rate history
+- [x] Date range filtering (end date is inclusive of the full day; a bare
+      `Y-m-d` coerces to `00:00:00` and silently dropped it)
+- [x] Statistics calculation — current/high/low/average/change per thread
+
+**Frontend:**
+- [x] `/reports` (client-facing trends) and `/admin/reports` (agency summary)
+- [x] Native date inputs for range selection
+- [x] CSV download buttons on both admin pages
+- [x] Report tables grouped by agency with trend badges
+
+**Admin:**
+- [x] Agency management UI — create, edit, deactivate, reactivate
+- [x] Thread catalog UI — create, edit, deactivate, reactivate
+- [x] Activity log viewer — period and action-type filters
 
 ### ⏳ IN PROGRESS
 
@@ -402,23 +401,9 @@ Nothing in this phase
 
 ### ❌ MISSING
 
-**Backend:**
-- [ ] ReportController (generate reports)
-- [ ] CSV export functionality
-- [ ] Date range filtering
-- [ ] Statistics calculation
-
-**Frontend:**
-- [ ] Reports page
-- [ ] Date picker component
-- [ ] CSV download button
-- [ ] Report table display
-
-**Admin:**
-- [ ] Admin dashboard
-- [ ] Agency management UI
-- [ ] User management
-- [ ] Activity log viewer
+- [ ] **User management UI** — brokers and admins can only be created through
+      `tinker` or a seeder; there is no screen for it
+- [ ] A dedicated `/admin` landing page (admins currently land on `/dashboard`)
 
 ---
 
@@ -455,98 +440,74 @@ Nothing yet
 
 ---
 
+## 🔔 Phase 9: Notification Delivery
+
+> This phase did not exist in the original roadmap, which is itself the problem:
+> "clients get notified when rates change" is the product's core promise, and
+> nothing in Phases 1–8 ever delivers a message to a human.
+
+### ✅ COMPLETED
+
+- [x] `notifications` table with per-client rows, price delta and status
+- [x] `NotifySubscribedClients` job writes a `pending` row per subscriber,
+      deduped so a client following both a thread and its agency gets one row
+- [x] `notification_type` preference stored per subscription (All / Email / Push)
+
+### ❌ MISSING — nothing is ever delivered
+
+- [ ] **A worker that consumes `status='pending'` rows.** Nothing reads them;
+      `markAsSent()` / `markAsFailed()` on the model are never called, so rows
+      accumulate forever
+- [ ] **Device token storage.** No table, column or endpoint holds an FCM/APNs
+      token, so a phone cannot be addressed at all. The `FIREBASE_*` keys in
+      `.env.example` are aspirational — no Firebase code exists
+- [ ] **Mail transport.** `MAIL_MAILER=log` writes to a file. No Mailable and no
+      `->notify()` call exists anywhere
+- [ ] **PWA shell for web push.** `frontend/public` does not exist — no manifest,
+      no service worker. Web push needs both plus a permission prompt, and on
+      iOS only works for home-screen-installed PWAs (16.4+)
+
+Net effect: `notification_type: All | Email | Push` is a stored preference that
+nothing honours.
+
+### ⚠️ Product decisions to settle first
+
+Building the above in the wrong order wastes the effort:
+
+- [ ] **Channel.** Push-to-web-app is the weakest channel for Faisalabad loom
+      owners. SMS and WhatsApp need no install, no permission prompt and no
+      smartphone. Building FCM first risks shipping a channel nobody receives
+- [ ] **Phone as identity.** `phone` is collected and uniquely indexed, but login
+      is `email` + password. Phone + OTP is the natural login here, and OTP
+      doubles as the verification required before anyone can be sent an SMS.
+      Today a user can register with someone else's number
+- [ ] **Volume controls.** Hourly updates × every subscribed thread = an alert
+      every hour, per thread. There is no change threshold, no quiet hours and
+      no digest option; `client_subscriptions` has no column for any of them
+- [ ] **Language.** The UI is English-only; the users read Urdu
+- [ ] **Rate trust.** Brokers enter rates with no verification or dispute path.
+      `updated_by` is captured but never surfaced, so a client cannot see who
+      set a price or how stale it is
+
+---
+
 ## 📋 Implementation Checklist
 
-### Backend - Phase 2 Priority Order
+> Superseded. Every item in the original checklist (AuthController, middleware,
+> ReportController, seeders, the core frontend pages and components) is now
+> built — see [`PROGRESS.md`](PROGRESS.md) for the verified status of each.
+>
+> What remains from the original ordering:
 
-**1. Authentication (Required First)**
-```
-backend/app/Http/Controllers/Api/AuthController.php
-- [ ] Create class extending Controller
-- [ ] register() method - validate & create client
-- [ ] login() method - generate token
-- [ ] logout() method - revoke token
-- [ ] me() method - return current user
-```
+**Backend**
+- [ ] Form request classes in `app/Http/Requests/` (validation is still inline)
+- [ ] Exception handler so errors match the `ApiResponse` shape
 
-**2. Middleware**
-```
-backend/app/Http/Middleware/BrokerMiddleware.php
-backend/app/Http/Middleware/AdminMiddleware.php
-- [ ] Check user role
-- [ ] Return 403 if unauthorized
-- [ ] Register in HTTP kernel
-- [ ] Apply to routes
-```
-
-**3. Report Controller**
-```
-backend/app/Http/Controllers/Api/ReportController.php
-- [ ] agencySummary() - group rates by agency
-- [ ] rateHistory() - return CSV data
-```
-
-**4. Seeders**
-```
-database/seeders/
-- [ ] AgencySeeder
-- [ ] ThreadSeeder
-- [ ] UserSeeder
-- [ ] ClientSeeder
-- [ ] RateSeeder
-- [ ] Run: php artisan db:seed
-```
-
-**5. Validation & Error Handling**
-```
-backend/app/Http/Requests/
-- [ ] Create form request classes
-- [ ] Add validation rules
-- [ ] Update controllers to use them
-```
-
-### Frontend - Phase 3 Priority Order
-
-**1. Core Pages**
-```
-frontend/src/app/
-- [ ] /register/page.tsx - Registration
-- [ ] /dashboard - Enhanced with components
-- [ ] /reports/page.tsx - Rate reports
-```
-
-**2. Essential Components**
-```
-frontend/src/components/
-- [ ] RateCard.tsx - Display single rate
-- [ ] RateChart.tsx - Chart with Recharts
-- [ ] Header.tsx - Navigation
-- [ ] FilterBar.tsx - Type/Agency filters
-```
-
-**3. Hooks**
-```
-frontend/src/hooks/
-- [ ] useRates.ts - Fetch rates
-- [ ] useSubscriptions.ts - Manage subs
-- [ ] usePusher.ts - Real-time
-```
-
-**4. Real-time Integration**
-```
-frontend/src/lib/
-- [ ] pusher-client.ts - Initialize Pusher
-- [ ] Subscribe to channels
-- [ ] Listen for events
-```
-
-**5. Export & Reports**
-```
-frontend/src/
-- [ ] CSV export functionality
-- [ ] Date range picker
-- [ ] Statistics display
-```
+**Frontend**
+- [ ] `src/hooks/` — `useRates`, `useSubscriptions`, `usePusher`. Data fetching
+      currently lives in each page, which is fine at this size but duplicative
+- [ ] `src/lib/pusher-client.ts` — initialise Pusher, subscribe to `rates`,
+      listen for `rate-updated`. The backend side is done and verified
 
 ---
 
