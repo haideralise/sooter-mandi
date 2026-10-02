@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuthStore } from '@/store/auth-store';
-import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
+import { useAuthStore } from '@/store/auth-store';
+import { apiErrorMessage } from '@/lib/api-error';
 
 export default function Login() {
+  const router = useRouter();
   const { login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,10 +20,10 @@ export default function Login() {
 
     try {
       await login(email, password);
-      toast.success('Login successful!');
-      window.location.href = '/dashboard';
+      toast.success('Login successful');
+      router.replace('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      toast.error(apiErrorMessage(error, 'Login failed'));
     } finally {
       setLoading(false);
     }
@@ -43,6 +46,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="username"
               className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="you@example.com"
             />
@@ -55,6 +59,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="••••••••"
             />
@@ -71,16 +76,23 @@ export default function Login() {
 
         <div className="mt-6 pt-6 border-t border-neutral-200 text-center">
           <p className="text-neutral-600 text-sm">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">
               Sign up
             </Link>
           </p>
         </div>
 
-        <div className="mt-6 p-4 bg-neutral-50 rounded-lg">
+        <div className="mt-6 p-4 bg-neutral-50 rounded-lg space-y-1">
+          <p className="text-xs font-semibold text-neutral-700">Seeded demo accounts</p>
           <p className="text-xs text-neutral-600">
-            <strong>Demo:</strong> For testing, use any email and password. Real authentication is configured on backend.
+            Client: <code>loom.owner@example.com</code>
+            <br />
+            Broker: <code>broker@sootermandi.local</code>
+            <br />
+            Admin: <code>admin@sootermandi.local</code>
+            <br />
+            Password for all three: <code>password</code>
           </p>
         </div>
       </div>

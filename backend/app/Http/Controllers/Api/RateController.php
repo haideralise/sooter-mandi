@@ -18,9 +18,15 @@ class RateController extends Controller
     public function index(Request $request)
     {
         $limit = min($request->input('limit', 50), 200);
-        $page = $request->input('page', 1);
 
-        $query = Rate::with(['thread', 'agency']);
+        // Only the current rate for each thread. Without this the endpoint
+        // returns the full rate history, so a dashboard showing "latest rates"
+        // renders one card per historical data point instead of per thread.
+        // Rate ids are auto-incrementing, so MAX(id) is the newest row.
+        $query = Rate::with(['thread', 'agency'])
+            ->whereIn('id', function ($sub) {
+                $sub->selectRaw('MAX(id)')->from('rates')->groupBy('thread_id');
+            });
 
         if ($request->has('agency_id')) {
             $query->where('agency_id', $request->agency_id);
@@ -30,12 +36,11 @@ class RateController extends Controller
             $query->where('thread_id', $request->thread_id);
         }
 
-        // Get latest rate per thread
         $latestRates = $query
             ->latest('created_at')
             ->paginate($limit);
 
-        $data = $latestRates->map(fn($rate) => [
+        $data = $latestRates->getCollection()->map(fn($rate) => [
             'id' => $rate->id,
             'thread_id' => $rate->thread_id,
             'thread_name' => $rate->thread->type . ' - ' . $rate->thread->color,
@@ -104,8 +109,6 @@ class RateController extends Controller
 
     public function update(Request $request)
     {
-        $this->authorize('isAdmin|isBroker', auth()->user());
-
         $validated = $request->validate([
             'thread_id' => 'required|exists:threads,id',
             'price_pkr' => 'required|numeric|min:0',
@@ -121,8 +124,9 @@ class RateController extends Controller
             'price_pkr' => $validated['price_pkr'],
             'previous_price' => $previousRate?->price_pkr,
             'updated_by' => auth()->id(),
-            'godown_address' => $validated['godown_address'],
-            'notes' => $validated['notes'],
+            // Nullable fields are absent from $validated when the caller omits them.
+            'godown_address' => $validated['godown_address'] ?? $thread->agency?->godown_address,
+            'notes' => $validated['notes'] ?? null,
         ]);
 
         $change = $rate->price_pkr - ($rate->previous_price ?? $rate->price_pkr);

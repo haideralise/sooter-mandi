@@ -112,6 +112,19 @@ See `/docs/API.md` for complete API documentation.
 
 See `/docs/DATABASE.md` for database schema and relationships.
 
+## Project Status
+
+See [`PROGRESS.md`](PROGRESS.md) — what is built, what is broken, and what is
+next. `ROADMAP.md` holds the original phase plan.
+
+Short version: the rate board works end to end. **Notifications do not** — rows
+queue up in the database and nothing sends them. See Phase 9 in the roadmap.
+
+## Deployment
+
+See `/docs/DEPLOYMENT.md` for server requirements, environment setup, the deploy
+sequence, and the security gaps that must be closed before going public.
+
 ---
 
 **Status:** 🔨 In Development  
