@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -26,9 +26,15 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
+        // Only bounce to /login for an expired/revoked token on an already
+        // authenticated request. A 401 from the login call itself is just bad
+        // credentials, and redirecting there would wipe the error message.
+        const isAuthEndpoint = (error.config?.url ?? '').startsWith('/auth/');
+        if (error.response?.status === 401 && !isAuthEndpoint) {
           this.clearToken();
-          window.location.href = '/login';
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(error);
       }
@@ -60,6 +66,8 @@ class ApiClient {
     name: string;
     email: string;
     phone: string;
+    password: string;
+    password_confirmation: string;
     city?: string;
     organization_name?: string;
   }) {
@@ -118,6 +126,11 @@ class ApiClient {
     return this.client.put(`/agencies/${id}`, data);
   }
 
+  /** Soft delete: the API flips is_active rather than removing the row. */
+  async deleteAgency(id: number) {
+    return this.client.delete(`/agencies/${id}`);
+  }
+
   // Threads endpoints
   async getThreads(params?: { agency_id?: number; type?: string; active_only?: boolean; limit?: number; page?: number }) {
     return this.client.get('/threads', { params });
@@ -134,8 +147,24 @@ class ApiClient {
     packaging_type: 'Carton' | 'Bag';
     weight_value?: number;
     weight_unit?: 'lbs' | 'kg' | 'g';
+    description?: string;
   }) {
     return this.client.post('/threads', data);
+  }
+
+  async updateThread(
+    id: number,
+    data: {
+      type?: string;
+      color?: string;
+      packaging_type?: 'Carton' | 'Bag';
+      weight_value?: number;
+      weight_unit?: 'lbs' | 'kg' | 'g';
+      description?: string;
+      is_active?: boolean;
+    }
+  ) {
+    return this.client.put(`/threads/${id}`, data);
   }
 
   // Subscriptions endpoints

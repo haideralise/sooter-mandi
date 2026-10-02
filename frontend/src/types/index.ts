@@ -4,8 +4,9 @@ export interface Rate {
   thread_name: string;
   agency_id: number;
   agency_name: string;
-  price_pkr: number;
-  previous_price?: number;
+  /** Eloquent `decimal:2` casts serialise as strings, e.g. "1500.00". */
+  price_pkr: string | number;
+  previous_price?: string | number | null;
   change: number;
   change_percent: number;
   packaging: string;
@@ -21,18 +22,24 @@ export interface Thread {
   color: string;
   packaging_type: 'Carton' | 'Bag';
   weight: string;
-  description?: string;
-  current_price: number;
-  last_updated: string;
+  weight_value?: string | number | null;
+  weight_unit?: 'lbs' | 'kg' | 'g';
+  description?: string | null;
+  is_active: boolean;
+  current_price: string | number;
+  last_updated: string | null;
 }
 
 export interface Agency {
   id: number;
   name: string;
   city: string;
-  contact_phone?: string;
-  contact_email?: string;
+  godown_address?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  is_active: boolean;
   thread_count: number;
+  created_at?: string;
 }
 
 export interface Client {
@@ -97,4 +104,42 @@ export interface RateStatistics {
   average: number;
   change?: number;
   change_percent?: number;
+}
+
+export type AuthRole = 'client' | 'broker' | 'admin';
+
+/**
+ * Clients and staff live in separate backend tables, so the shape differs
+ * slightly. Everything past `email` is optional for that reason.
+ */
+export interface AuthAccount {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  is_active?: boolean;
+  last_login?: string | null;
+  city?: string | null;
+  organization_name?: string | null;
+  role?: 'admin' | 'broker';
+}
+
+export interface LoginResponseData {
+  token: string;
+  role: AuthRole;
+  client?: AuthAccount;
+  user?: AuthAccount;
+}
+
+export interface RegisterResponseData {
+  client_id: number;
+  name: string;
+  email: string;
+  role: AuthRole;
+  token: string;
+}
+
+export interface MeResponseData {
+  role: AuthRole;
+  account: AuthAccount;
 }
